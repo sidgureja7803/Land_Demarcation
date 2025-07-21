@@ -1,0 +1,88 @@
+/* Add this to your existing globals.css */
+
+/* Indian flag colors */
+:root {
+  --saffron: #FF9933;
+  --white: #FFFFFF;
+  --navy: #000080;
+  --green: #138808;
+  --ashoka-blue: #0d47a1;
+}
+
+.govt-header {
+  background-color: var(--white);
+  border-bottom: 2px solid var(--saffron);
+}
+
+.govt-top-strip {
+  background: linear-gradient(to right, var(--saffron), var(--white), var(--green));
+  height: 4px;
+}
+
+.govt-nav {
+  background-color: var(--navy);
+}
+
+.govt-nav a {
+  color: var(--white);
+  transition: background-color 0.2s;
+}
+
+.govt-nav a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.govt-footer {
+  background-color: var(--navy);
+  color: var(--white);
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, #0d47a1 0%, #1a237e 100%);
+}
+
+.haryana-hero {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--ashoka-blue) 100%);
+}
+
+/* Font size adjustments for accessibility */
+.font-size-control a {
+  padding: 0 5px;
+  cursor: pointer;
+}
+
+/* Special badge for official government site */
+.govt-badge {
+  background-color: var(--saffron);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* Utility classes for flag colors */
+.bg-saffron {
+  background-color: var(--saffron);
+}
+
+.bg-navy {
+  background-color: var(--navy);
+}
+
+.bg-green {
+  background-color: var(--green);
+}
+
+.text-saffron {
+  color: var(--saffron);
+}
+
+.text-navy {
+  color: var(--navy);
+}
+
+.text-green {
+  color: var(--green);
+}

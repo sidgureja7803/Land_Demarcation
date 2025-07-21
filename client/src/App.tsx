@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
+import LoginPage from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import CitizenDashboard from "@/pages/citizen-dashboard";
 import OfficerDashboard from "@/pages/officer-dashboard";
@@ -24,7 +25,14 @@ function Router() {
   if (!isAuthenticated) {
     return (
       <Switch>
-        <Route path="*" component={Landing} />
+        <Route path="/" component={Landing} />
+        <Route path="/login" component={LoginPage} />
+        <Route path="*">
+          {() => {
+            window.location.href = "/";
+            return null;
+          }}
+        </Route>
       </Switch>
     );
   }

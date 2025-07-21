@@ -1,10 +1,32 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import session from "express-session";
+import cors from "cors";
 
 const app = express();
+
+// Enable CORS for development
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? false : ['http://localhost:3000', 'http://localhost:5000'],
+  credentials: true
+}));
+
+// Parse request body
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'land-demarcation-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();

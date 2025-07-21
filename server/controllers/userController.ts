@@ -1,12 +1,21 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
 import { users } from '../../shared/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, desc, asc } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
+import { SessionData } from 'express-session';
 
 // Need to store passwords separately since they're not in the schema
 const userPasswords = new Map<string, string>();
+
+// Add userId and role to session
+declare module 'express-session' {
+  interface SessionData {
+    userId: string;
+    userRole: string;
+  }
+}
 
 // Types for request bodies
 interface SignupRequest {
@@ -16,6 +25,10 @@ interface SignupRequest {
   name: string;
   role?: string;
   inviteCode?: string; // For officers/ADC
+  // Additional fields for the citizen profile
+  aadhaarNumber?: string;
+  phoneNumber?: string;
+  address?: string;
 }
 
 interface LoginRequest {
@@ -42,11 +55,11 @@ export const userController = {
         email, 
         password, 
         name, 
-        role = 'citizen', 
+        role = 'citizen',
+        inviteCode,
         aadhaarNumber,
         phoneNumber,
-        address,
-        inviteCode 
+        address
       } = req.body as SignupRequest;
 
       // Basic validation
@@ -71,16 +84,15 @@ export const userController = {
         });
       }
 
-      // Check for existing user with same email or username
+      // Check for existing user with same email
       const existingUser = await db.select()
         .from(users)
         .where(eq(users.email, email))
-        .or(eq(users.username, username))
         .limit(1);
 
       if (existingUser.length > 0) {
         return res.status(409).json({ 
-          error: 'User already exists with this email or username' 
+          error: 'User already exists with this email' 
         });
       }
 
@@ -106,12 +118,17 @@ export const userController = {
       // Generate user ID
       const userId = uuidv4();
 
+      // Parse name into first name and last name
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
       // Create user
       const newUser = await db.insert(users).values({
         id: userId, 
         email,
-        firstName: name.split(' ')[0],
-        lastName: name.split(' ').slice(1).join(' '),
+        firstName,
+        lastName,
         role: role || 'citizen',
         employeeId: role !== 'citizen' ? username : null,
         isActive: true,
@@ -171,7 +188,7 @@ export const userController = {
       const user = userResult[0];
 
       // Check if user account is active
-      if (!user.isActive) {
+      if (user.isActive === false) {
         return res.status(403).json({
           error: 'Account is inactive or suspended'
         });
@@ -198,17 +215,21 @@ export const userController = {
       // Set user session
       req.session.userId = user.id;
       req.session.userRole = user.role;
-      req.session.userName = user.name;
+
+      // Create user display name from first and last name
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
 
       // Success response - do not include password hash or sensitive data
       return res.status(200).json({
         message: 'Login successful',
         user: {
           id: user.id,
-          username: user.username,
           email: user.email,
-          name: user.name,
-          role: user.role
+          firstName: user.firstName,
+          lastName: user.lastName,
+          fullName,
+          role: user.role,
+          employeeId: user.employeeId
         }
       });
     } catch (error) {
@@ -250,14 +271,193 @@ export const userController = {
   getCurrentUser: async (req: Request, res: Response) => {
     try {
       if (!req.session?.userId) {
+        return res.status(401).json({ 
+          error: 'Not authenticated' 
+        });
       }
-    });
-  } catch (error) {
-    console.error('Get current user error:', error);
-    return res.status(500).json({
-      error: 'Failed to retrieve user profile',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
+
+      // Find user by ID
+      const userResult = await db.select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        role: users.role,
+        employeeId: users.employeeId,
+        profileImageUrl: users.profileImageUrl,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+      })
+        .from(users)
+        .where(eq(users.id, req.session.userId))
+        .limit(1);
+
+      if (!userResult.length) {
+        return res.status(404).json({ 
+          error: 'User not found' 
+        });
+      }
+
+      const user = userResult[0];
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+
+      // Return user profile
+      return res.status(200).json({
+        user: {
+          ...user,
+          fullName
+        }
+      });
+    } catch (error) {
+      console.error('Get current user error:', error);
+      return res.status(500).json({
+        error: 'Failed to retrieve user profile',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  },
+
+  // Update user profile
+  updateProfile: async (req: Request, res: Response) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ 
+          error: 'Not authenticated' 
+        });
+      }
+
+      const { name } = req.body as UpdateProfileRequest;
+      
+      if (!name) {
+        return res.status(400).json({
+          error: 'No fields to update'
+        });
+      }
+      
+      // Parse name into first name and last name
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      
+      // Update user
+      const updatedUser = await db.update(users)
+        .set({
+          firstName,
+          lastName,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, req.session.userId))
+        .returning({
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          updatedAt: users.updatedAt
+        });
+
+      if (!updatedUser.length) {
+        return res.status(404).json({ 
+          error: 'User not found' 
+        });
+      }
+
+      const user = updatedUser[0];
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+
+      // Return updated profile
+      return res.status(200).json({
+        message: 'Profile updated successfully',
+        user: {
+          ...user,
+          fullName
+        }
+      });
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return res.status(500).json({
+        error: 'Failed to update profile',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  },
+
+  // Change password
+  changePassword: async (req: Request, res: Response) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ 
+          error: 'Not authenticated' 
+        });
+      }
+
+      const { currentPassword, newPassword } = req.body as ChangePasswordRequest;
+      
+      // Basic validation
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ 
+          error: 'Missing required fields', 
+          required: ['currentPassword', 'newPassword'] 
+        });
+      }
+
+      // Password strength validation
+      const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+      if (!passwordRegex.test(newPassword)) {
+        return res.status(400).json({ 
+          error: 'New password must be at least 8 characters long and contain at least one letter and one number' 
+        });
+      }
+
+      // Find user
+      const userResult = await db.select()
+        .from(users)
+        .where(eq(users.id, req.session.userId))
+        .limit(1);
+
+      if (!userResult.length) {
+        return res.status(404).json({ 
+          error: 'User not found' 
+        });
+      }
+
+      const user = userResult[0];
+
+      // Get password hash from in-memory storage
+      const storedHash = userPasswords.get(user.id);
+      
+      // For demo purposes allow default password if no hash is stored
+      const defaultPasswordHash = '$2b$10$6LKBj.cBUQ.DlT4DX3QQjuoqaBn8v8tTNbOvwkU1IhTBpTJw9jm6i'; // hash for 'password123'
+      
+      // Validate current password
+      const isCurrentPasswordValid = storedHash ?
+        await bcrypt.compare(currentPassword, storedHash) :
+        await bcrypt.compare(currentPassword, defaultPasswordHash);
+        
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ 
+          error: 'Current password is incorrect' 
+        });
+      }
+
+      // Hash new password
+      const saltRounds = 10;
+      const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update user password in memory
+      userPasswords.set(user.id, newPasswordHash);
+      
+      // Update user record's updatedAt timestamp
+      await db.update(users)
+        .set({ 
+          updatedAt: new Date() 
+        })
+        .where(eq(users.id, req.session.userId));
+
+      // Return success
+      return res.status(200).json({
+        message: 'Password updated successfully'
+      });
+    } catch (error) {
       console.error('Change password error:', error);
       return res.status(500).json({
         error: 'Failed to change password',
@@ -278,10 +478,11 @@ export const userController = {
       
       const usersList = await db.select({
         id: users.id,
-        username: users.username,
         email: users.email,
-        name: users.name,
+        firstName: users.firstName,
+        lastName: users.lastName,
         role: users.role,
+        employeeId: users.employeeId,
         isActive: users.isActive,
         createdAt: users.createdAt,
       })
@@ -289,13 +490,19 @@ export const userController = {
         .limit(limit)
         .offset(offset);
       
+      // Transform users to include full name
+      const transformedUsers = usersList.map(user => ({
+        ...user,
+        fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim()
+      }));
+      
       // Get total count for pagination
-      const countResult = await db.select({ count: db.fn.count(users.id) }).from(users);
+      const countResult = await db.select({ count: sql`count(${users.id})` }).from(users);
       const totalUsers = Number(countResult[0].count);
       
       // Return users list with pagination metadata
       return res.status(200).json({
-        users: usersList,
+        users: transformedUsers,
         pagination: {
           total: totalUsers,
           page,
