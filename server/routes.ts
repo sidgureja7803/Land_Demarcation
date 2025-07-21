@@ -11,6 +11,8 @@ import {
   insertVillageSchema
 } from "@shared/schema";
 import plotsRouter from "./src/routes/plots";
+import documentRoutes from "./routes/documentRoutes";
+import userRoutes from "./routes/userRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -18,6 +20,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register plot routes
   app.use('/api', plotsRouter);
+  
+  // Register document routes
+  app.use('/api/documents', documentRoutes);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

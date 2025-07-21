@@ -120,6 +120,29 @@ export const plotAssignments = pgTable("plot_assignments", {
   notes: text("notes"),
 });
 
+// Document uploads for plots and demarcation processes
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  filename: varchar("filename").notNull(),
+  originalFilename: varchar("original_filename").notNull(),
+  fileSize: integer("file_size").notNull(), // Size in bytes
+  mimeType: varchar("mime_type").notNull(),
+  filePath: varchar("file_path").notNull(),
+  fileUrl: varchar("file_url"),
+  documentType: varchar("document_type").notNull(), // ownership_proof, id_proof, survey_map, no_objection_certificate, land_records, official_notice, etc.
+  plotId: integer("plot_id").references(() => plots.id),
+  logId: integer("log_id").references(() => demarcationLogs.id),
+  uploadedById: varchar("uploaded_by_id").references(() => users.id).notNull(),
+  verifiedById: varchar("verified_by_id").references(() => users.id),
+  verificationStatus: varchar("verification_status").default("pending"), // pending, verified, rejected
+  verificationNotes: text("verification_notes"),
+  verifiedAt: timestamp("verified_at"),
+  isPublic: boolean("is_public").default(false), // Whether document can be viewed by citizens
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   circle: one(circles, {
