@@ -10,6 +10,7 @@ import {
   insertDistrictSchema,
   insertVillageSchema
 } from "@shared/schema";
+import plotsRouter from "./src/routes/plots";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware

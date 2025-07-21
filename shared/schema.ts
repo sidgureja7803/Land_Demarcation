@@ -36,7 +36,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   employeeId: varchar("employee_id").unique(),
-  role: varchar("role").notNull().default("officer"), // officer, supervisor, administrator
+  role: varchar("role").notNull().default("officer"), // citizen, officer, supervisor, administrator
   circleId: integer("circle_id").references(() => circles.id),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -75,9 +75,14 @@ export const plots = pgTable("plots", {
   areaUnit: varchar("area_unit").default("acres"),
   ownerName: varchar("owner_name"),
   ownerContact: varchar("owner_contact"),
+  ownerId: varchar("owner_id").references(() => users.id),
   assignedOfficerId: varchar("assigned_officer_id").references(() => users.id),
   currentStatus: varchar("current_status").default("pending"), // pending, in_progress, completed, disputed, on_hold
   priority: varchar("priority").default("medium"), // low, medium, high, critical
+  latitude: decimal("latitude", { precision: 10, scale: 6 }), // Geographic coordinates for map integration
+  longitude: decimal("longitude", { precision: 10, scale: 6 }), // Geographic coordinates for map integration
+  villageName: varchar("village_name"), // Store village name directly for easier access
+  circleName: varchar("circle_name"), // Store circle name directly for easier access
   isDuplicate: boolean("is_duplicate").default(false),
   duplicateOfId: integer("duplicate_of_id").references(() => plots.id),
   createdAt: timestamp("created_at").defaultNow(),

@@ -32,7 +32,11 @@ const formSchema = z.object({
   targetCompletionDate: z.string().optional(),
 });
 
-export default function NewLog() {
+interface NewLogProps {
+  userType?: 'citizen' | 'officer' | 'admin';
+}
+
+export default function NewLog({ userType = 'officer' }: NewLogProps) {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();

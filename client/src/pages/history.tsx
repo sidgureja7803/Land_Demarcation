@@ -9,7 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, AlertTriangle, MapPin, User, Calendar } from "lucide-react";
 
-export default function History() {
+interface HistoryProps {
+  userType?: 'citizen' | 'officer' | 'admin';
+  adminView?: boolean;
+}
+
+export default function History({ userType = 'officer', adminView = false }: HistoryProps) {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
 
