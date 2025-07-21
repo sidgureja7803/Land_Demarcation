@@ -1,4 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useLocation, useRedirect } from "wouter";
+import { Activity, BadgeCheck, Calendar, Clock, ClockIcon, FileSpreadsheet, History, LayoutGrid, List, Map, MapPin, MonitorSmartphone, Package, PieChart, Trash, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/lib/auth";
+import { UserCard } from "@/components/user-card";
+import { format } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { PlotMap } from "@/components/plot-map";
+import { fetchAllPlots } from "@/api/plots";
+import { Plot } from "@/types/plots";
+import Link from "@/components/link";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, CheckCircle, Gauge, AlertTriangle, FileText, FilePlus, FileCheck, User, Settings, Map } from "lucide-react";
 import { Link } from "wouter";
 import PlotMap from "@/components/plot-map";
+import PlotsMapDisplay from "@/components/plots-map-display";
 
 // Define types for the dashboard stats and logs data
 interface DashboardStats {
@@ -268,40 +283,7 @@ export default function Dashboard({ userType = 'officer', adminView = false }: D
               </CardHeader>
               <CardContent className="p-6">
                 {stats && stats.assignedPlots > 0 ? (
-                  <PlotMap 
-                    plots={[
-                      // Mock data for dashboard display - would be replaced with actual API data
-                      {
-                        id: 1,
-                        plotId: "MAH-2023-001",
-                        ownerName: "Raj Kumar",
-                        latitude: 28.1210,
-                        longitude: 76.6313,
-                        status: "in_progress",
-                        villageName: "Narnaul"
-                      },
-                      {
-                        id: 2,
-                        plotId: "MAH-2023-002",
-                        ownerName: "Sunita Devi",
-                        latitude: 28.1480,
-                        longitude: 76.6220,
-                        status: "pending",
-                        villageName: "Mahendragarh"
-                      },
-                      {
-                        id: 3,
-                        plotId: "MAH-2023-003",
-                        ownerName: "Anil Singh",
-                        latitude: 28.0990,
-                        longitude: 76.5890,
-                        status: "completed",
-                        villageName: "Ateli"
-                      }
-                    ]} 
-                    height="300px" 
-                    showAllPlots
-                  />
+                  <PlotsMapDisplay userType={userType} height="300px" />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-48 text-center">
                     <MapPin className="text-neutral-300 h-10 w-10 mb-2" />

@@ -15,6 +15,9 @@ import plotsRouter from "./src/routes/plots";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+  
+  // Register plot routes
+  app.use('/api', plotsRouter);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

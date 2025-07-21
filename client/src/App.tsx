@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
+import CitizenDashboard from "@/pages/citizen-dashboard";
+import OfficerDashboard from "@/pages/officer-dashboard";
 import Plots from "@/pages/plots";
 import NewLog from "@/pages/new-log";
 import History from "@/pages/history";
@@ -32,7 +34,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/">
-          {() => <Dashboard userType="citizen" />}
+          {() => <CitizenDashboard />}
         </Route>
         <Route path="/apply">
           {() => <NewLog userType="citizen" />}
@@ -54,7 +56,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/">
-        {() => <Dashboard userType={hasAdminAccess ? "admin" : "officer"} />}
+        {() => <OfficerDashboard />}
       </Route>
       <Route path="/plots">
         {() => <Plots />}
