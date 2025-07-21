@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(119, 45%, 45%);
+  --secondary-foreground: hsl(211, 100%, 99%);
+  --accent: hsl(33, 100%, 48%);
+  --accent-foreground: hsl(211, 100%, 99%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  
+  /* Additional colors for the app */
+  --neutral-50: hsl(0, 0%, 96%);
+  --neutral-100: hsl(0, 0%, 88%);
+  --neutral-500: hsl(0, 0%, 46%);
+  --neutral-800: hsl(0, 0%, 26%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Custom utility classes */
+.text-neutral-50 {
+  color: var(--neutral-50);
+}
+
+.text-neutral-100 {
+  color: var(--neutral-100);
+}
+
+.text-neutral-500 {
+  color: var(--neutral-500);
+}
+
+.text-neutral-800 {
+  color: var(--neutral-800);
+}
+
+.bg-neutral-50 {
+  background-color: var(--neutral-50);
+}
+
+.bg-neutral-100 {
+  background-color: var(--neutral-100);
+}
+
+.bg-neutral-500 {
+  background-color: var(--neutral-500);
+}
+
+.bg-neutral-800 {
+  background-color: var(--neutral-800);
+}
+
+.border-neutral-100 {
+  border-color: var(--neutral-100);
+}
+
+.border-neutral-200 {
+  border-color: hsl(0, 0%, 90%);
+}
+
+.hover\:bg-neutral-50:hover {
+  background-color: var(--neutral-50);
+}
+
+.hover\:text-neutral-600:hover {
+  color: hsl(0, 0%, 52%);
+}
+
+.hover\:text-neutral-800:hover {
+  color: var(--neutral-800);
+}
+
+/* Gradient utilities */
+.gradient-primary {
+  background: linear-gradient(135deg, hsl(207, 90%, 54%) 0%, hsl(207, 90%, 42%) 100%);
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, hsl(207, 90%, 54%) 0%, hsl(207, 90%, 32%) 100%);
+}
