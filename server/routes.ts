@@ -1,7 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { adminStorage } from "./storage.extension";
+import { setupAuth } from "./replitAuth";
+import { isAuthenticated, isAdmin } from "./middleware/authMiddleware";
 import { 
   insertPlotSchema, 
   insertDemarcationLogSchema, 
@@ -12,7 +14,13 @@ import {
 } from "@shared/schema";
 import plotsRouter from "./src/routes/plots";
 import documentRoutes from "./routes/documentRoutes";
-import userRoutes from "./routes/userRoutes";
+
+// Import role-based routes
+import citizenRoutes from "./routes/citizen/citizenRoutes";
+import officerRoutes from "./routes/officer/officerRoutes";
+import citizenPlotRoutes from "./routes/citizen/plotRoutes";
+import officerPlotRoutes from "./routes/officer/plotRoutes";
+import adminRouter from "./routes/adminRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -23,6 +31,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register document routes
   app.use('/api/documents', documentRoutes);
+  
+  // Register admin routes
+  app.use('/api/admin', adminRouter);
+  
+  // Register role-based routes
+  app.use('/api/citizen', citizenRoutes);
+  app.use('/api/officer', officerRoutes);
+  app.use('/api/citizen/plots', citizenPlotRoutes);
+  app.use('/api/officer/plots', officerPlotRoutes);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

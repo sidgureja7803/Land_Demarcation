@@ -14,6 +14,7 @@ import NewLog from "@/pages/new-log";
 import History from "@/pages/history";
 import PlotMapView from "@/pages/plot-map-view";
 import NotFound from "@/pages/not-found";
+import AdminDashboard from "@/pages/admin-dashboard";
 
 function Router() {
   const { isAuthenticated, isLoading, isCitizen, hasAdminAccess } = useAuth();
@@ -80,7 +81,7 @@ function Router() {
       </Route>
       {hasAdminAccess && (
         <Route path="/admin">
-          {() => <Dashboard userType="admin" adminView={true} />}
+          {() => <AdminDashboard />}
         </Route>
       )}
       <Route>

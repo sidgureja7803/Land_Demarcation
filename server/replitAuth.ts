@@ -155,3 +155,29 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     return;
   }
 };
+
+// Admin access middleware
+export const isAdmin: RequestHandler = async (req, res, next) => {
+  // First ensure user is authenticated
+  const user = req.user as any;
+  
+  if (!req.isAuthenticated() || !user.claims) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  try {
+    // Get user from database to check role
+    const userId = user.claims.sub;
+    const dbUser = await storage.getUser(userId);
+    
+    if (!dbUser || dbUser.role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden: Admin access required" });
+    }
+    
+    // User is admin, proceed
+    return next();
+  } catch (error) {
+    console.error('Error verifying admin status:', error);
+    return res.status(500).json({ message: "Failed to verify admin privileges" });
+  }
+};
