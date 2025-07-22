@@ -9,7 +9,7 @@ import { MapPin, Clock, FileText, FilePlus, FileCheck, Map, Loader2 } from "luci
 import Link from "@/components/link";
 import Navbar from "@/components/navbar";
 import PlotsMapDisplay from "@/components/plots-map-display";
-import { fetchAllPlots } from "@/api/plots";
+import { fetchMyPlots, fetchPlotStats, CitizenPlotStats } from "@/api/citizen/plots";
 import { Plot } from "@/types/plots";
 
 // Define types for the citizen dashboard
@@ -34,8 +34,8 @@ const CitizenDashboard = () => {
 
   // Fetch citizen's plots
   const { data: plots, isLoading: loadingPlots } = useQuery<Plot[]>({
-    queryKey: ['plots'],
-    queryFn: fetchAllPlots,
+    queryKey: ['citizen-plots'],
+    queryFn: fetchMyPlots,
     staleTime: 5 * 60 * 1000, // 5 minutes
     onError: (error) => {
       console.error('Failed to fetch plots:', error);
@@ -47,9 +47,30 @@ const CitizenDashboard = () => {
     }
   });
 
-  // Calculate application summary from plots
+  // Fetch plot statistics
+  const { data: plotStats } = useQuery<CitizenPlotStats>({
+    queryKey: ['citizen-plot-stats'],
+    queryFn: fetchPlotStats,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    onError: (error) => {
+      console.error('Failed to fetch plot stats:', error);
+      // Don't show an error toast as this is non-critical information
+    }
+  });
+
+  // Set application summary from API stats or calculate from plots
   useEffect(() => {
-    if (plots) {
+    if (plotStats) {
+      // Use the stats from the API
+      setApplicationSummary({
+        total: plotStats.total,
+        pending: plotStats.pending,
+        inProgress: plotStats.in_progress,
+        completed: plotStats.completed,
+        rejected: plotStats.rejected
+      });
+    } else if (plots) {
+      // Fallback to calculating from plots if stats API fails
       const summary = plots.reduce((acc, plot) => {
         acc.total += 1;
         
@@ -79,7 +100,7 @@ const CitizenDashboard = () => {
 
       setApplicationSummary(summary);
     }
-  }, [plots]);
+  }, [plots, plotStats]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -184,7 +205,7 @@ const CitizenDashboard = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : applicationSummary.total > 0 ? (
-                <PlotsMapDisplay userType="citizen" height="300px" showAllPlots />
+                <PlotsMapDisplay userType="citizen" height="300px" showAllPlots plotsData={plots} />
               ) : (
                 <div className="flex flex-col items-center justify-center h-48 text-center">
                   <MapPin className="text-neutral-300 h-10 w-10 mb-2" />

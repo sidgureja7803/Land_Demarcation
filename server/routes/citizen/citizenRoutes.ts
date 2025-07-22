@@ -1,6 +1,6 @@
 import express from 'express';
 import { citizenController } from '../../controllers/citizen/citizenController';
-import { isAuthenticated, isCitizen } from '../../middleware/authMiddleware';
+import { isAuthenticated, isCitizen } from '../../middleware/shared/authMiddleware';
 
 const router = express.Router();
 

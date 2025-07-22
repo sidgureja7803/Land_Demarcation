@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { adminStorage } from "./storage.extension";
 import { setupAuth } from "./replitAuth";
-import { isAuthenticated, isAdmin } from "./middleware/authMiddleware";
+import { isAuthenticated, isAdmin } from "./middleware/shared/authMiddleware";
 import { 
   insertPlotSchema, 
   insertDemarcationLogSchema, 

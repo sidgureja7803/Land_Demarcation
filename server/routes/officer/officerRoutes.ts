@@ -1,6 +1,6 @@
 import express from 'express';
 import { officerController } from '../../controllers/officer/officerController';
-import { isAuthenticated, isOfficerOrADC, isAdmin } from '../../middleware/authMiddleware';
+import { isAuthenticated, isOfficerOrADC, isAdmin } from '../../middleware/shared/authMiddleware';
 
 const router = express.Router();
 

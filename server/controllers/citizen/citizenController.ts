@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { db } from '../../db';
 import { users } from '../../../shared/schema';
-import { eq, sql } from 'drizzle-orm';
-import bcrypt from 'bcrypt';
+import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import sharedUserController from '../shared/userController';
 
 // Need to store passwords separately since they're not in the schema
 const userPasswords = new Map<string, string>();
@@ -71,9 +71,17 @@ export const citizenController = {
             });
           }
 
-          // Hash password
-          const salt = await bcrypt.genSalt(10);
-          const hashedPassword = await bcrypt.hash(password, salt);
+          // Validate password complexity
+          const passwordValidation = sharedUserController.validatePassword(password);
+          if (!passwordValidation.valid) {
+            return res.status(400).json({
+              success: false,
+              message: passwordValidation.message
+            });
+          }
+          
+          // Hash the password using shared controller
+          const hashedPassword = await sharedUserController.hashPassword(password);
           
           const userId = uuidv4();
           
@@ -189,10 +197,10 @@ export const citizenController = {
             });
           }
           
-          // Compare password
-          const isMatch = await bcrypt.compare(password, storedPassword);
+          // Verify password using shared controller
+          const isPasswordValid = await sharedUserController.verifyPassword(password, storedPassword);
           
-          if (!isMatch) {
+          if (!isPasswordValid) {
             return res.status(401).json({ 
               success: false, 
               message: 'Invalid credentials' 
@@ -423,21 +431,29 @@ export const citizenController = {
           }
           
           // Verify current password
-          const isMatch = await bcrypt.compare(currentPassword, storedPassword);
+          const isPasswordValid = await sharedUserController.verifyPassword(currentPassword, storedPassword);
           
-          if (!isMatch) {
+          if (!isPasswordValid) {
             return res.status(401).json({ 
               success: false, 
               message: 'Current password is incorrect' 
             });
           }
           
-          // Hash new password
-          const salt = await bcrypt.genSalt(10);
-          const hashedPassword = await bcrypt.hash(newPassword, salt);
+          // Validate new password complexity
+          const passwordValidation = sharedUserController.validatePassword(newPassword);
+          if (!passwordValidation.valid) {
+            return res.status(400).json({
+              success: false,
+              message: passwordValidation.message
+            });
+          }
+          
+          // Hash the new password using shared controller
+          const newHashedPassword = await sharedUserController.hashPassword(newPassword);
           
           // Update password in map
-          userPasswords.set(userId, hashedPassword);
+          userPasswords.set(userId, newHashedPassword);
           
           // Update user record
           db.update(users)
@@ -473,31 +489,8 @@ export const citizenController = {
     }
   },
 
-  // Logout citizen
+  // Logout citizen - use shared controller
   logout(req: Request, res: Response) {
-    try {
-      req.session?.destroy((err) => {
-        if (err) {
-          console.error('Error destroying session:', err);
-          return res.status(500).json({ 
-            success: false, 
-            message: 'Error logging out' 
-          });
-        }
-        
-        res.clearCookie('connect.sid');
-        
-        return res.status(200).json({
-          success: true,
-          message: 'Logged out successfully'
-        });
-      });
-    } catch (error) {
-      console.error('Error in citizen logout:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Server error during logout' 
-      });
-    }
+    return sharedUserController.logout(req, res);
   }
 };

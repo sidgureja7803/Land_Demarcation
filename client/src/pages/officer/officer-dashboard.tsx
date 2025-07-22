@@ -12,34 +12,23 @@ import {
 import Link from "@/components/link";
 import Navbar from "@/components/navbar";
 import PlotsMapDisplay from "@/components/plots-map-display";
-import { fetchAllPlots } from "@/api/plots";
+import { fetchAllPlots, fetchPlotStats, OfficerPlotStats, RecentActivity } from "@/api/officer/plots";
 import { Plot } from "@/types/plots";
 import { format } from "date-fns";
 
-// Define types for the officer dashboard
-interface OfficerStats {
-  totalPlots: number;
-  pendingReview: number;
-  inProgress: number;
-  completedToday: number;
-  resolutionRate: number;
+// Additional types for the officer dashboard
+interface OfficerDashboardData {
+  stats: OfficerPlotStats;
+  recentActivity: RecentActivity[];
 }
 
 const OfficerDashboard = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [stats, setStats] = useState<OfficerStats>({
-    totalPlots: 0,
-    pendingReview: 0,
-    inProgress: 0,
-    completedToday: 0,
-    resolutionRate: 0
-  });
-
   // Fetch all plots (officer view shows all plots)
   const { data: plots, isLoading: loadingPlots } = useQuery<Plot[]>({
-    queryKey: ['plots'],
-    queryFn: fetchAllPlots,
+    queryKey: ['officer-plots'],
+    queryFn: () => fetchAllPlots(),
     staleTime: 5 * 60 * 1000, // 5 minutes
     onError: (error) => {
       console.error('Failed to fetch plots:', error);
@@ -50,38 +39,23 @@ const OfficerDashboard = () => {
       });
     }
   });
-
-  // Calculate officer statistics from plots
-  useEffect(() => {
-    if (plots && plots.length > 0) {
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Calculate statistics from plots data
-      const pendingCount = plots.filter(plot => plot.status === 'pending').length;
-      const inProgressCount = plots.filter(plot => plot.status === 'in_progress').length;
-      
-      // Count plots completed today
-      const completedToday = plots.filter(plot => {
-        return plot.status === 'completed' && 
-               plot.lastUpdated && 
-               plot.lastUpdated.toString().split('T')[0] === today;
-      }).length;
-      
-      // Calculate resolution rate (completed / total)
-      const completedTotal = plots.filter(plot => plot.status === 'completed').length;
-      const resolutionRate = plots.length > 0 
-        ? Math.round((completedTotal / plots.length) * 100) 
-        : 0;
-      
-      setStats({
-        totalPlots: plots.length,
-        pendingReview: pendingCount,
-        inProgress: inProgressCount,
-        completedToday,
-        resolutionRate
+  
+  // Fetch officer dashboard stats
+  const { data: dashboardData, isLoading: loadingStats } = useQuery<OfficerDashboardData>({
+    queryKey: ['officer-dashboard-stats'],
+    queryFn: fetchPlotStats,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    onError: (error) => {
+      console.error('Failed to fetch dashboard stats:', error);
+      toast({
+        title: "Error loading dashboard data",
+        description: "Please try again later",
+        variant: "destructive",
       });
     }
-  }, [plots]);
+  });
+
+  // No need to calculate stats manually as we're fetching them from the API
 
   // Group plots by village for analysis
   const plotsByVillage = plots?.reduce((acc, plot) => {
@@ -101,6 +75,7 @@ const OfficerDashboard = () => {
         {/* Header */}
         <section className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Officer Dashboard</h1>
+          <h3 className="text-lg font-semibold text-gray-800">{dashboardData?.stats?.pending || 0}</h3>
           <p className="text-muted-foreground mt-2">
             Mahendragarh Land Demarcation Portal - {format(new Date(), "EEEE, MMMM d, yyyy")}
           </p>
@@ -138,7 +113,7 @@ const OfficerDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {loadingPlots ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.totalPlots}
+                {loadingPlots ? <Loader2 className="h-6 w-6 animate-spin" /> : dashboardData?.stats?.total || 0}
               </div>
             </CardContent>
           </Card>
@@ -152,9 +127,9 @@ const OfficerDashboard = () => {
             <CardContent>
               <div className="flex items-baseline justify-between">
                 <div className="text-3xl font-bold">
-                  {loadingPlots ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.pendingReview}
+                  {loadingPlots ? <Loader2 className="h-6 w-6 animate-spin" /> : dashboardData?.stats?.pending || 0}
                 </div>
-                {stats.pendingReview > 0 && (
+                {dashboardData?.stats?.pending > 0 && (
                   <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300">
                     Requires Action
                   </Badge>
@@ -171,7 +146,7 @@ const OfficerDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {loadingPlots ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.completedToday}
+                {loadingPlots ? <Loader2 className="h-6 w-6 animate-spin" /> : dashboardData?.stats?.completedToday || 0}
               </div>
             </CardContent>
           </Card>
@@ -184,7 +159,7 @@ const OfficerDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {loadingPlots ? <Loader2 className="h-6 w-6 animate-spin" /> : `${stats.resolutionRate}%`}
+                {loadingPlots ? <Loader2 className="h-6 w-6 animate-spin" /> : `${dashboardData?.stats?.resolutionRate}%`}
               </div>
             </CardContent>
           </Card>
@@ -203,7 +178,7 @@ const OfficerDashboard = () => {
                 <div className="flex items-center justify-center h-[400px]">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-              ) : stats.totalPlots > 0 ? (
+              ) : dashboardData?.stats?.total > 0 ? (
                 <PlotsMapDisplay userType="officer" height="400px" showAllPlots />
               ) : (
                 <div className="flex flex-col items-center justify-center h-[400px] text-center">
@@ -233,7 +208,7 @@ const OfficerDashboard = () => {
                     .map(plot => (
                       <div key={plot.id} className="flex items-start justify-between border-b pb-4 last:border-0">
                         <div>
-                          <div className="font-medium">{plot.plotId || `Plot #${plot.id}`}</div>
+                          <h3 className="font-medium text-gray-700">Assigned to Me</h3>
                           <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                             <Users className="h-3 w-3" />
                             {plot.ownerName || 'Unknown'}
@@ -298,7 +273,7 @@ const OfficerDashboard = () => {
                             <CardTitle className="text-sm font-medium">{village}</CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <div className="text-2xl font-bold mb-2">{villagePlots.length} plots</div>
+                            <h3 className="text-lg font-semibold text-gray-800">{dashboardData?.stats?.total || 0}</h3>
                             <div className="space-y-1 text-sm">
                               <div className="flex justify-between">
                                 <span className="flex items-center gap-1">
