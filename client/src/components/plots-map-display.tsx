@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAllPlots } from '@/api/plots';
+import { fetchAllPlots } from '@/api/shared/plots';
 import PlotMap from '@/components/plot-map';
 import { Plot } from '@/types/plots';
 import { Loader2 } from 'lucide-react';

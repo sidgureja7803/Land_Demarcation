@@ -1,9 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { adminStorage } from "./storage.extension";
 import { setupAuth } from "./replitAuth";
-import { isAuthenticated, isAdmin } from "./middleware/shared/authMiddleware";
+import { isAuthenticated } from "./middleware/shared/authMiddleware";
 import { 
   insertPlotSchema, 
   insertDemarcationLogSchema, 
@@ -11,8 +10,8 @@ import {
   insertCircleSchema,
   insertDistrictSchema,
   insertVillageSchema
-} from "@shared/schema";
-import plotsRouter from "./src/routes/plots";
+} from "../shared/schema";
+import plotsRouter from "./routes/shared/plotRoutes";
 import documentRoutes from "./routes/documentRoutes";
 
 // Import role-based routes
@@ -20,7 +19,7 @@ import citizenRoutes from "./routes/citizen/citizenRoutes";
 import officerRoutes from "./routes/officer/officerRoutes";
 import citizenPlotRoutes from "./routes/citizen/plotRoutes";
 import officerPlotRoutes from "./routes/officer/plotRoutes";
-import adminRouter from "./routes/adminRoutes";
+import adminRouter from "./routes/admin/adminRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware

@@ -1,20 +1,20 @@
 import express from 'express';
-import { db } from '../db';
+import { db } from '../../db';
 import { plots, demarcationLogs } from '../../../shared/schema';
-import { and, desc, eq, sql } from 'drizzle-orm';
-import { isAuthenticated } from '../middlewares/auth';
+import { desc, eq, sql } from 'drizzle-orm';
+import { isAuthenticated } from '../../middleware/shared/authMiddleware';
 
 const router = express.Router();
 
 // Get all plots
 router.get('/plots', isAuthenticated, async (req, res) => {
   try {
-    const userId = req.user?.id;
-    const userType = req.user?.userType || 'citizen';
+    const userId = req.session?.userId;
+    const userRole = req.session?.userRole || 'citizen';
     let plotData;
     
     // If user is citizen, only return their plots
-    if (userType === 'citizen') {
+    if (userRole === 'citizen') {
       plotData = await db.select()
         .from(plots)
         .where(eq(plots.ownerId, userId))
@@ -64,8 +64,8 @@ router.get('/plots', isAuthenticated, async (req, res) => {
 router.get('/plots/:id', isAuthenticated, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id;
-    const userType = req.user?.userType || 'citizen';
+    const userId = req.session?.userId;
+    const userRole = req.session?.userRole || 'citizen';
     
     const plotData = await db.select()
       .from(plots)
@@ -79,7 +79,7 @@ router.get('/plots/:id', isAuthenticated, async (req, res) => {
     const plot = plotData[0];
     
     // Check permissions - citizens can only view their own plots
-    if (userType === 'citizen' && plot.ownerId !== userId) {
+    if (userRole === 'citizen' && plot.ownerId !== userId) {
       return res.status(403).json({ error: 'You do not have permission to view this plot' });
     }
     
@@ -100,17 +100,55 @@ router.get('/plots/:id', isAuthenticated, async (req, res) => {
       ownerName: plot.ownerName,
       latitude: plot.latitude,
       longitude: plot.longitude,
+      area: plot.area,
       status: latestLog.length > 0 ? latestLog[0].currentStatus : 'pending',
+      lastUpdated: latestLog.length > 0 ? latestLog[0].updatedAt.toISOString() : plot.createdAt.toISOString(),
       villageName: plot.villageName,
       circleName: plot.circleName,
-      area: plot.area,
-      lastUpdated: latestLog.length > 0 ? latestLog[0].updatedAt.toISOString() : plot.createdAt.toISOString()
+      district: plot.district
     };
     
     res.json(plotWithStatus);
   } catch (error) {
-    console.error('Error fetching plot:', error);
-    res.status(500).json({ error: 'Failed to fetch plot' });
+    console.error('Error fetching plot details:', error);
+    res.status(500).json({ error: 'Failed to fetch plot details' });
+  }
+});
+
+// Get all plot locations for map view
+router.get('/plots/map-locations', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session?.userId;
+    const userRole = req.session?.userRole || 'citizen';
+    let plotData;
+    
+    // If user is citizen, only return their plots
+    if (userRole === 'citizen') {
+      plotData = await db.select({
+        id: plots.id,
+        plotId: plots.plotId,
+        latitude: plots.latitude,
+        longitude: plots.longitude,
+        status: sql<string>`COALESCE((SELECT status FROM demarcation_logs WHERE plot_id = plots.id ORDER BY created_at DESC LIMIT 1), 'pending')`
+      })
+      .from(plots)
+      .where(eq(plots.ownerId, userId));
+    } else {
+      // For officers and admins, return all plots
+      plotData = await db.select({
+        id: plots.id,
+        plotId: plots.plotId,
+        latitude: plots.latitude,
+        longitude: plots.longitude,
+        status: sql<string>`COALESCE((SELECT status FROM demarcation_logs WHERE plot_id = plots.id ORDER BY created_at DESC LIMIT 1), 'pending')`
+      })
+      .from(plots);
+    }
+    
+    res.json(plotData);
+  } catch (error) {
+    console.error('Error fetching plot locations:', error);
+    res.status(500).json({ error: 'Failed to fetch plot locations' });
   }
 });
 

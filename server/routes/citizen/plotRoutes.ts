@@ -1,6 +1,6 @@
 import express from 'express';
 import { citizenPlotController } from '../../controllers/citizen/plotController';
-import { isAuthenticated, isCitizen } from '../../middleware/authMiddleware';
+import { isAuthenticated, isCitizen } from '../../middleware/shared/authMiddleware';
 
 const router = express.Router();
 

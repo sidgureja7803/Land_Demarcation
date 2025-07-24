@@ -1,6 +1,6 @@
 import express from 'express';
 import { userController } from '../controllers/userController';
-import { authenticateUser, checkRole } from '../middleware/auth';
+import { isAuthenticated, hasRole } from '../middleware/shared/authMiddleware';
 
 const router = express.Router();
 
@@ -10,12 +10,12 @@ router.post('/login', userController.login);
 router.post('/logout', userController.logout);
 
 // Protected routes - require authentication
-router.get('/me', authenticateUser, userController.getCurrentUser);
-router.patch('/me', authenticateUser, userController.updateProfile);
-router.post('/change-password', authenticateUser, userController.changePassword);
+router.get('/me', isAuthenticated, userController.getCurrentUser);
+router.patch('/me', isAuthenticated, userController.updateProfile);
+router.post('/change-password', isAuthenticated, userController.changePassword);
 
 // Admin routes - require admin role
-router.get('/all', authenticateUser, checkRole(['admin']), userController.getAllUsers);
-router.patch('/:userId/status', authenticateUser, checkRole(['admin']), userController.toggleUserStatus);
+router.get('/all', isAuthenticated, hasRole('admin'), userController.getAllUsers);
+router.patch('/:userId/status', isAuthenticated, hasRole('admin'), userController.toggleUserStatus);
 
 export default router;
