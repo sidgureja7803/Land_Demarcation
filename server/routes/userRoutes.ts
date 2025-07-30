@@ -1,5 +1,5 @@
 import express from 'express';
-import { userController } from '../controllers/userController';
+import { userController } from '../controllers/shared/userController';
 import { isAuthenticated, hasRole } from '../middleware/shared/authMiddleware';
 
 const router = express.Router();
